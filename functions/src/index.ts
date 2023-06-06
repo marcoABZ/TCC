@@ -11,7 +11,7 @@ import * as logger from "firebase-functions/logger";
 
 import functions = require("firebase-functions");
 import express = require("express");
-import {FieldValue, getFirestore} from "firebase-admin/firestore";
+import {FieldValue, Firestore} from "firebase-admin/firestore";
 const app = express();
 
 app.get("/helloW", (request, response) => {
@@ -21,13 +21,25 @@ app.get("/helloW", (request, response) => {
 
 app.put("/users/:id", async (req, res) => {
   const userId = req.params.id;
-  const db = getFirestore();
+  // const db = getFirestore();
+  const db = new Firestore({
+    projectId: "tccmarcoz",
+  });
 
   const docRef = db.collection("logs").doc(userId);
-
-  await docRef.update({
-    registros: FieldValue.arrayUnion(FieldValue.serverTimestamp()),
-  });
+  try {
+    if ((await docRef.get()).exists) {
+      await docRef.update({
+        registros: FieldValue.arrayUnion(Date.now()),
+      });
+    } else {
+      docRef.set({
+        registros: [Date.now()],
+      });
+    }
+  } catch (error) {
+    res.status(500).send(`{${error}}`);
+  }
 
   res.status(200);
   res.send("{'success': true}");
