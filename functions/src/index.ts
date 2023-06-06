@@ -11,6 +11,7 @@ import * as logger from "firebase-functions/logger";
 
 import functions = require("firebase-functions");
 import express = require("express");
+import {FieldValue, getFirestore} from "firebase-admin/firestore";
 const app = express();
 
 app.get("/helloW", (request, response) => {
@@ -18,12 +19,18 @@ app.get("/helloW", (request, response) => {
   response.send("Hello from Firebase!");
 });
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+app.put("/users/:id", async (req, res) => {
+  const userId = req.params.id;
+  const db = getFirestore();
+
+  const docRef = db.collection("logs").doc(userId);
+
+  await docRef.update({
+    registros: FieldValue.arrayUnion(FieldValue.serverTimestamp()),
+  });
+
+  res.status(200);
+  res.send("{'success': true}");
+});
 
 exports.app = functions.https.onRequest(app);
-
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
