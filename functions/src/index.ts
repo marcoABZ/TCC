@@ -33,8 +33,8 @@ app.get("/helloW", (request, response) => {
 
 app.post("/login", async (req, res) => {
   const {login, password} = req.body;
-  const collection = getCollection("users");
-  const docRef = collection.doc(login);
+  const usersCollection = getCollection("users");
+  const docRef = usersCollection.doc(login);
 
   docRef.get()
     .then((doc) => {
@@ -43,7 +43,6 @@ app.post("/login", async (req, res) => {
         const hashed = crypto.createHash("sha1")
           .update(password + salt)
           .digest("hex");
-        res.status(200).send(`{"hashed": ${hashed}}`);
         if (hashed == passwordHash) {
           const privateKey = crypto.randomBytes(20).toString("hex");
           const hotpStart = 0;
@@ -51,11 +50,19 @@ app.post("/login", async (req, res) => {
           const message = {
             "success": true,
             "data": {
-              "hotp_key": privateKey,
-              "hotp_start": hotpStart,
-              "jwt_token": token,
+              "hotpKey": privateKey,
+              "hotpStart": hotpStart,
+              "jwtToken": token,
             },
           };
+
+          docRef.set({
+            "hotpKey": privateKey,
+            "hoptStart": hotpStart,
+          }, {
+            merge: true,
+          });
+
           res.status(200).send(message);
         } else {
           const message = {
