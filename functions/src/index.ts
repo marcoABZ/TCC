@@ -13,12 +13,13 @@ import functions = require("firebase-functions");
 import express = require("express");
 import {FieldValue} from "firebase-admin/firestore";
 import crypto = require("crypto");
-import {generateJWT, getCollection} from "./helpers";
+import {generateJWT, getCollection, validateJWT} from "./helpers";
 
 const app = express();
 const INVALID_REQUEST = 400;
 const UNAUTHORIZED = 401;
 const INTERNAL_SERVER_ERROR = 500;
+// const HOTP_TOLERANCE = 5;
 
 interface UserCredentials {
   passwordHash: string;
@@ -99,6 +100,32 @@ app.post("/login", async (req, res) => {
 
 app.put("/users/:id", async (req, res) => {
   const userId = req.params.id;
+  const token = req.headers.authorization;
+
+  if (token) {
+    try {
+      validateJWT(token!.substring(7));
+    } catch {
+      const message = {
+        "success": false,
+        "error": {
+          "code": UNAUTHORIZED,
+          "message": "Invalid credentials",
+        },
+      };
+      res.status(401).send(message);
+    }
+  } else {
+    const message = {
+      "success": false,
+      "error": {
+        "code": UNAUTHORIZED,
+        "message": "Authorization required",
+      },
+    };
+    res.status(401).send(message);
+  }
+
   // const db = getFirestore();
   const collection = getCollection("logs");
 
